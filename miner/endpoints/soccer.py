@@ -36,7 +36,7 @@ def get_model_manager(config: Config = Depends(get_config)) -> ModelManager:
         model_manager.load_all_models()
     return model_manager
 
-async def process_soccer_video_dual_gpu(
+async def process_soccer_video(
     video_path: str,
     model_manager: ModelManager,
     batch_size: int = 8
