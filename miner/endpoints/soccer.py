@@ -36,7 +36,7 @@ def get_model_manager(config: Config = Depends(get_config)) -> ModelManager:
         model_manager.load_all_models()
     return model_manager
 
-async def process_soccer_video(
+async def process_soccer_video_dual_gpu(
     video_path: str,
     model_manager: ModelManager,
     batch_size: int = 8
@@ -46,7 +46,7 @@ async def process_soccer_video(
 
     try:
         video_processor = VideoProcessor(
-            device="cuda",  
+            device="cuda",  # 멀티 GPU 지원
             cuda_timeout=10800.0,
             mps_timeout=10800.0,
             cpu_timeout=10800.0
@@ -58,9 +58,16 @@ async def process_soccer_video(
                 detail="Video file is not readable or corrupted"
             )
 
-        pitch_model = model_manager.get_model("pitch", device="cuda:0")
-        player_model0 = model_manager.get_model("player", device="cuda:0")
-        player_model1 = model_manager.get_model("player", device="cuda:1")
+        # GPU0 → pitch 모델
+        pitch_model = model_manager.get_model("pitch")
+        pitch_model.to("cuda:0")  # 모델을 GPU0으로 이동
+
+        # Player 모델을 GPU0, GPU1에 각각 로드
+        player_model0 = model_manager.get_model("player")
+        player_model0.to("cuda:0")  # 모델을 GPU0으로 이동
+
+        player_model1 = model_manager.get_model("player")
+        player_model1.to("cuda:1")  # 모델을 GPU1으로 이동
 
         tracker = sv.ByteTrack()
 
@@ -73,10 +80,12 @@ async def process_soccer_video(
             batch_indices.append(frame_number)
 
             if len(batch_frames) >= batch_size:
+                # ----- GPU0: pitch 모델 -----
                 pitch_task = asyncio.to_thread(
                     pitch_model, batch_frames, verbose=False
                 )
 
+                # ----- GPU0 & GPU1: player 모델 배치 분산 -----
                 half = len(batch_frames) // 2
                 frames0, frames1 = batch_frames[:half], batch_frames[half:]
 
@@ -87,12 +96,14 @@ async def process_soccer_video(
                     player_model1, frames1, imgsz=960, verbose=False
                 )
 
+                # 동시에 실행
                 pitch_results, results0, results1 = await asyncio.gather(
                     pitch_task, player_task0, player_task1
                 )
 
                 player_results = results0 + results1
 
+                # ----- 결과 처리 -----
                 for idx, (pitch_res, player_res) in enumerate(zip(pitch_results, player_results)):
                     frame_num = batch_indices[idx]
 
@@ -126,6 +137,7 @@ async def process_soccer_video(
                 batch_frames.clear()
                 batch_indices.clear()
 
+        # 남은 프레임 처리
         if batch_frames:
             pitch_task = asyncio.to_thread(pitch_model, batch_frames, verbose=False)
             half = len(batch_frames) // 2
@@ -164,6 +176,7 @@ async def process_soccer_video(
                 }
                 tracking_data["frames"].append(frame_data)
 
+        # 처리 시간 로그
         processing_time = time.time() - start_time
         tracking_data["processing_time"] = processing_time
         total_frames = len(tracking_data["frames"])
