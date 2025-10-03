@@ -56,8 +56,9 @@ async def process_soccer_video(
                 detail="Video file is not readable or corrupted"
             )
         
-        player_model = model_manager.get_model("player")
-        pitch_model = model_manager.get_model("pitch")
+        pitch_model = model_manager.get_model("pitch", device="cuda:0")
+        player_model = model_manager.get_model("player", device="cuda:1")
+
         
         tracker = sv.ByteTrack()
         
@@ -67,7 +68,7 @@ async def process_soccer_video(
             pitch_result = pitch_model(frame, verbose=False)[0]
             keypoints = sv.KeyPoints.from_ultralytics(pitch_result)
             
-            player_result = player_model(frame, imgsz=1280, verbose=False)[0]
+            player_result = player_model(frame, imgsz=960, verbose=False)[0]
             detections = sv.Detections.from_ultralytics(player_result)
             detections = tracker.update_with_detections(detections)
             
