@@ -68,6 +68,8 @@ def optimize_result_data(result: Dict[str, Union[Dict, List, float, str]]) -> Di
     
     return optimized_result
 
+
+
 async def main():
     try:
         logger.info("Starting video processing test")
@@ -95,6 +97,8 @@ async def main():
                 video_path=str(video_path),
                 model_manager=model_manager
             )
+
+            logger.info(f"Frames: {result['frames']}")
             
             logger.info("Optimizing frame data...")
             optimized_result = optimize_result_data(result)
