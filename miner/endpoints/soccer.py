@@ -146,7 +146,7 @@ async def process_challenge(
                     "processing_time": tracking_data["processing_time"]
                 }
 
-                logger.info(f"Frames" tracking_data["frames"])
+                logger.info(f"Frames" {tracking_data["frames"]})
                 
                 logger.info(f"Completed challenge {challenge_id} in {tracking_data['processing_time']:.2f} seconds")
                 return response
