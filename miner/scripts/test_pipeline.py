@@ -17,7 +17,7 @@ from endpoints.soccer import process_soccer_video
 from utils.device import get_optimal_device
 from scripts.download_models import download_models
 
-TEST_VIDEO_URL = "https://pub-a55bd0dbae3c4afd86bd066961ab7d1e.r2.dev/test_10secs.mov"
+TEST_VIDEO_URL = "https://scoredata.me/chunks/6d5150eb8f2d4fd585436ecc77a07b.mp4"
 
 def optimize_coordinates(coords: List[float]) -> List[float]:
     return [round(float(x), 2) for x in coords]
