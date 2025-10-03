@@ -14,6 +14,7 @@ class ModelManager:
         # 기본 디바이스 설정 (fallback 용도)
         self.default_device = get_optimal_device(device)
         # 캐시 구조를 model_name + device 조합으로 관리
+        self.device = self.default_device
         self.models: Dict[str, Dict[str, YOLO]] = {}
         self.data_dir = Path(__file__).parent.parent / "data"
         self.data_dir.mkdir(exist_ok=True)
